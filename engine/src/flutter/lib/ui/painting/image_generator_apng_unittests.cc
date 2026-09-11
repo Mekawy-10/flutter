@@ -45,15 +45,35 @@ void AppendChunk(std::vector<uint8_t>& buf,
   WriteBE32(buf, crc);
 }
 
+<<<<<<< HEAD
+=======
+// Appends a chunk with a declared data_length that may differ from the actual
+// data bytes written. Used to test handling of malformed chunks.
+void AppendChunkWithFakeLength(std::vector<uint8_t>& buf,
+                               const char type[4],
+                               uint32_t declared_length,
+                               const std::vector<uint8_t>& actual_data) {
+  WriteBE32(buf, declared_length);
+  buf.insert(buf.end(), type, type + 4);
+  buf.insert(buf.end(), actual_data.begin(), actual_data.end());
+  WriteBE32(buf, 0);  // CRC placeholder
+}
+
+>>>>>>> e8113bf45620cbeb8aff64947ee4c93e16adb4cf
 // Builds a minimal valid APNG with a malicious fdAT chunk whose
 // data_length is less than 4, which would trigger an integer underflow
 // in DemuxNextImage() without the bounds check fix.
 std::vector<uint8_t> BuildMaliciousApng(uint32_t fdat_data_length) {
+<<<<<<< HEAD
   std::vector<uint8_t> apng;
 
   // PNG signature
   const uint8_t sig[] = {137, 80, 78, 71, 13, 10, 26, 10};
   apng.insert(apng.end(), sig, sig + 8);
+=======
+  std::vector<uint8_t> apng(APNGImageGenerator::kPngSignature.begin(),
+                            APNGImageGenerator::kPngSignature.end());
+>>>>>>> e8113bf45620cbeb8aff64947ee4c93e16adb4cf
 
   // IHDR: 1x1 RGBA, 8-bit
   {
@@ -123,5 +143,56 @@ TEST(APNGImageGeneratorTest, FdATWithShortDataLengthDoesNotCrash) {
   EXPECT_NE(make_generator(4), nullptr);
 }
 
+<<<<<<< HEAD
+=======
+TEST(APNGImageGeneratorTest, FdATWithOverflowDataLengthIsRejected) {
+  std::vector<uint8_t> apng(APNGImageGenerator::kPngSignature.begin(),
+                            APNGImageGenerator::kPngSignature.end());
+
+  // IHDR
+  {
+    std::vector<uint8_t> ihdr;
+    WriteBE32(ihdr, 1);
+    WriteBE32(ihdr, 1);
+    ihdr.push_back(8);
+    ihdr.push_back(6);
+    ihdr.push_back(0);
+    ihdr.push_back(0);
+    ihdr.push_back(0);
+    AppendChunk(apng, "IHDR", ihdr);
+  }
+  // acTL
+  {
+    std::vector<uint8_t> actl;
+    WriteBE32(actl, 1);
+    WriteBE32(actl, 0);
+    AppendChunk(apng, "acTL", actl);
+  }
+  // fcTL
+  {
+    std::vector<uint8_t> fctl;
+    WriteBE32(fctl, 0);
+    WriteBE32(fctl, 1);
+    WriteBE32(fctl, 1);
+    WriteBE32(fctl, 0);
+    WriteBE32(fctl, 0);
+    WriteBE16(fctl, 1);
+    WriteBE16(fctl, 10);
+    fctl.push_back(0);
+    fctl.push_back(0);
+    AppendChunk(apng, "fcTL", fctl);
+  }
+  // fdAT with declared data_length=0xFFFFFFFF but only 8 actual bytes
+  AppendChunkWithFakeLength(apng, "fdAT", 0xFFFFFFFF, {0, 0, 0, 1, 0, 0, 0, 0});
+  // IEND
+  AppendChunk(apng, "IEND", {});
+
+  auto data = SkData::MakeWithCopy(apng.data(), apng.size());
+  auto generator = APNGImageGenerator::MakeFromData(data);
+  // The generator should reject the malformed APNG without crashing.
+  EXPECT_EQ(generator, nullptr);
+}
+
+>>>>>>> e8113bf45620cbeb8aff64947ee4c93e16adb4cf
 }  // namespace testing
 }  // namespace flutter

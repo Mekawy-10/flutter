@@ -18,7 +18,10 @@ import 'package:flutter_tools/src/build_system/targets/ios.dart';
 import 'package:flutter_tools/src/globals.dart' as globals;
 import 'package:flutter_tools/src/ios/xcodeproj.dart';
 import 'package:flutter_tools/src/project.dart';
+<<<<<<< HEAD
 import 'package:flutter_tools/src/reporting/reporting.dart';
+=======
+>>>>>>> e8113bf45620cbeb8aff64947ee4c93e16adb4cf
 import 'package:test/fake.dart';
 import 'package:unified_analytics/unified_analytics.dart';
 
@@ -35,7 +38,7 @@ final Platform macPlatform = FakePlatform(
 
 const _kSharedConfig = <String>[
   '-dynamiclib',
-  '-miphoneos-version-min=13.0',
+  '-miphoneos-version-min=15.0',
   '-Xlinker',
   '-rpath',
   '-Xlinker',
@@ -53,7 +56,7 @@ const _kSharedConfig = <String>[
 
 FakeCommand createPlutilFakeCommand(File infoPlist) {
   return FakeCommand(
-    command: <String>['plutil', '-replace', 'MinimumOSVersion', '-string', '13.0', infoPlist.path],
+    command: <String>['plutil', '-replace', 'MinimumOSVersion', '-string', '15.0', infoPlist.path],
   );
 }
 
@@ -63,7 +66,6 @@ void main() {
   late FakeProcessManager processManager;
   late Artifacts artifacts;
   late BufferLogger logger;
-  late TestUsage usage;
   late FakeAnalytics fakeAnalytics;
 
   setUp(() {
@@ -71,7 +73,6 @@ void main() {
     processManager = FakeProcessManager.empty();
     logger = BufferLogger.test();
     artifacts = Artifacts.test();
-    usage = TestUsage();
     fakeAnalytics = getInitializedFakeAnalyticsInstance(
       fs: fileSystem,
       fakeFlutterVersion: FakeFlutterVersion(),
@@ -116,7 +117,7 @@ void main() {
               fileSystem.path.join('.tmp_rand0', 'flutter_tools_stub_source.rand0', 'debug_app.cc'),
             ),
             '-dynamiclib',
-            '-miphonesimulator-version-min=13.0',
+            '-miphonesimulator-version-min=15.0',
             '-Xlinker',
             '-rpath',
             '-Xlinker',
@@ -255,7 +256,7 @@ void main() {
             '-replace',
             'MinimumOSVersion',
             '-string',
-            '13.0',
+            '15.0',
             infoPlist.path,
           ],
           exitCode: 1,
@@ -677,7 +678,6 @@ void main() {
       expect(assetDirectory.childFile('kernel_blob.bin'), isNot(exists));
       expect(assetDirectory.childFile('vm_snapshot_data'), isNot(exists));
       expect(assetDirectory.childFile('isolate_snapshot_data'), isNot(exists));
-      expect(usage.events, isEmpty);
       expect(fakeAnalytics.sentEvents, isEmpty);
     },
     overrides: <Type, Generator>{

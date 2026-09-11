@@ -22,6 +22,7 @@ import '../project.dart';
 import 'application_package.dart';
 import 'lldb.dart';
 import 'xcode_debug.dart';
+import 'xcodeproj.dart';
 
 /// Provides methods for launching and debugging apps on physical iOS CoreDevices.
 ///
@@ -39,12 +40,26 @@ class IOSCoreDeviceLauncher {
     required XcodeDebug xcodeDebug,
     required FileSystem fileSystem,
     required ProcessUtils processUtils,
+<<<<<<< HEAD
+=======
+    required XcodeProjectInterpreter xcodeProjectInterpreter,
+>>>>>>> e8113bf45620cbeb8aff64947ee4c93e16adb4cf
     @visibleForTesting LLDB? lldb,
   }) : _coreDeviceControl = coreDeviceControl,
        _logger = logger,
        _xcodeDebug = xcodeDebug,
        _fileSystem = fileSystem,
+<<<<<<< HEAD
        _lldb = lldb ?? LLDB(logger: logger, processUtils: processUtils);
+=======
+       _lldb =
+           lldb ??
+           LLDB(
+             logger: logger,
+             processUtils: processUtils,
+             xcodeProjectInterpreter: xcodeProjectInterpreter,
+           );
+>>>>>>> e8113bf45620cbeb8aff64947ee4c93e16adb4cf
 
   final IOSCoreDeviceControl _coreDeviceControl;
   final Logger _logger;
@@ -156,6 +171,33 @@ class IOSCoreDeviceLauncher {
       return false;
     }
     return attachStatus;
+  }
+
+  /// Install and launch the app on the device with `devicectl` ([_coreDeviceControl])
+  /// and stream logs, but do not attach an LLDB debugger.
+  Future<bool> launchAppAndStreamLogsWithoutDebugger({
+    required String deviceId,
+    required String bundlePath,
+    required String bundleId,
+    required List<String> launchArguments,
+    required ShutdownHooks shutdownHooks,
+  }) async {
+    final (bool installStatus, _) = await _coreDeviceControl.installApp(
+      deviceId: deviceId,
+      bundlePath: bundlePath,
+    );
+    if (!installStatus) {
+      return false;
+    }
+
+    // Since we are not attaching a debugger, startStopped should be false.
+    return _coreDeviceControl.launchAppAndStreamLogs(
+      coreDeviceLogForwarder: coreDeviceLogForwarder,
+      deviceId: deviceId,
+      bundleId: bundleId,
+      launchArguments: launchArguments,
+      shutdownHooks: shutdownHooks,
+    );
   }
 
   /// Install and launch the app on the device through Xcode using Mac Automation ([_xcodeDebug]).
@@ -336,7 +378,7 @@ class IOSCoreDeviceControl {
     //   * Don't ignore flutter logs:
     //     2025-09-16 12:50:07.953318-0500 Runner[1279:149305] flutter: ...
     RegExp(
-      r'^\S* \S* \S*\[[0-9:]*] ((?!(\[INFO|\[WARNING|\[ERROR|\[IMPORTANT|\[FATAL):))(?!(flutter:))(?!(\[UIKit App Config\] `UIScene` lifecycle)).*',
+      r'^\S* \S* \S*\[[0-9:]*] ((?!(\[INFO|\[WARNING|\[ERROR|\[IMPORTANT|\[FATAL):))(?!(flutter:))(?!(\[UIKit App Config\] `UIScene` lifecycle))(?!.*UIScene life\s?cycle).*',
     ),
     // Ignore iOS execution mode and potential error. This is not meaningful to the developer.
     // Example:
@@ -834,7 +876,7 @@ class IOSCoreDeviceControl {
       // Signal script child jobs to exit and exit the shell.
       // See https://linux.die.net/Bash-Beginners-Guide/sect_12_01.html#sect_12_01_01_02.
       shutdownHooks.addShutdownHook(() => launchProcess.kill());
-      return launchCompleter.future;
+      return await launchCompleter.future;
     } on ProcessException catch (err) {
       _logger.printTrace('Error executing devicectl: $err');
       return false;
